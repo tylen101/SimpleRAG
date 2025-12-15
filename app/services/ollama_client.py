@@ -20,9 +20,11 @@ class OllamaClient:
     async def chat(self, model: str, messages: List[Dict[str, str]]) -> str:
         # Non-streaming for MVP
         async with httpx.AsyncClient(timeout=300) as client:
+            print("building ollama post...", messages)
             r = await client.post(
-                f"{self.base_url}/api/chat",
-                json={"model": model, "messages": messages, "stream": False},
+                "http://localhost:11434/api/chat",
+                json={"model": "gpt-oss:20b", "messages": messages, "stream": False},
+                # {"model": model, "messages": messages, "stream": False},
             )
             r.raise_for_status()
             data = r.json()

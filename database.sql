@@ -79,6 +79,37 @@ CREATE TABLE document_chunks (
   CONSTRAINT uq_chunk UNIQUE (version_id, chunk_index)
 );
 
+CREATE TABLE document_jobs (
+  job_id        NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  tenant_id     NUMBER NOT NULL REFERENCES tenants(tenant_id),
+  doc_id        NUMBER NOT NULL REFERENCES documents(doc_id) ON DELETE CASCADE,
+  version_id    NUMBER REFERENCES document_versions(version_id) ON DELETE SET NULL,
+
+  status        VARCHAR2(20) NOT NULL
+                CHECK (status IN ('queued','running','succeeded','failed','canceled')),
+
+  priority      NUMBER DEFAULT 100 NOT NULL,
+  attempts      NUMBER DEFAULT 0 NOT NULL,
+  max_attempts  NUMBER DEFAULT 3 NOT NULL,
+
+  locked_at     TIMESTAMP,
+  locked_by     VARCHAR2(200),
+
+  last_error    CLOB,
+  created_at    TIMESTAMP DEFAULT SYSTIMESTAMP NOT NULL,
+  updated_at    TIMESTAMP
+);
+
+CREATE INDEX idx_doc_jobs_status_pri
+  ON document_jobs(status, priority, created_at);
+
+CREATE INDEX idx_doc_jobs_doc
+  ON document_jobs(doc_id);
+
+CREATE INDEX idx_doc_jobs_tenant
+  ON document_jobs(tenant_id);
+
+
 CREATE TABLE chunk_embeddings (
   chunk_id           NUMBER PRIMARY KEY REFERENCES document_chunks(chunk_id) ON DELETE CASCADE,
   tenant_id          NUMBER NOT NULL REFERENCES tenants(tenant_id),

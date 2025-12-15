@@ -15,6 +15,7 @@ class UploadResponse(BaseModel):
     doc_id: int
     version_id: int
     status: str
+    job_id: int | None = None
 
 
 class ProcessResponse(BaseModel):

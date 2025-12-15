@@ -12,7 +12,7 @@ class Settings(BaseModel):
     EMBEDDING_DIM: int = int(os.getenv("EMBEDDING_DIM", "4096"))
 
     # Default chat model (user can override per conversation)
-    DEFAULT_CHAT_MODEL: str = os.getenv("DEFAULT_CHAT_MODEL", "gptoss:120b")
+    DEFAULT_CHAT_MODEL: str = os.getenv("DEFAULT_CHAT_MODEL", "gpt-oss:20b")
 
 
 settings = Settings()

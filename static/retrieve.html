@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>RAG Retrieval Debug</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <style>
+      :root {
+        --bg: #0f172a;
+        --panel: #020617;
+        --border: #1e293b;
+        --text: #e5e7eb;
+        --muted: #94a3b8;
+        --accent: #60a5fa;
+        --danger: #ef4444;
+        --ok: #22c55e;
+      }
+
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+          Roboto, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        padding: 24px;
+      }
+
+      .container {
+        max-width: 1100px;
+        margin: 0 auto;
+      }
+
+      h1 {
+        margin: 0 0 12px;
+        font-size: 20px;
+      }
+
+      .row {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 16px;
+      }
+
+      label {
+        display: block;
+        font-weight: 600;
+        margin: 10px 0 6px;
+      }
+
+      input[type='text'],
+      input[type='number'],
+      textarea,
+      select {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 10px 12px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: #0b1220;
+        color: var(--text);
+        outline: none;
+      }
+
+      textarea {
+        min-height: 120px;
+        resize: vertical;
+      }
+
+      .grid2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .grid4 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr 1fr;
+        gap: 12px;
+      }
+
+      .actions {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin-top: 12px;
+      }
+
+      button {
+        border: 1px solid var(--border);
+        background: rgba(96, 165, 250, 0.12);
+        color: var(--text);
+        padding: 10px 14px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: 700;
+      }
+
+      button:hover {
+        border-color: rgba(96, 165, 250, 0.55);
+      }
+
+      button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .pill {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+        border: 1px solid var(--border);
+        background: rgba(148, 163, 184, 0.08);
+        padding: 8px 10px;
+        border-radius: 999px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .status {
+        margin-top: 10px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+
+      .status.error {
+        color: var(--danger);
+      }
+
+      .status.ok {
+        color: var(--ok);
+      }
+
+      .results {
+        margin-top: 14px;
+        display: grid;
+        gap: 12px;
+      }
+
+      .result {
+        border: 1px solid var(--border);
+        background: rgba(148, 163, 184, 0.06);
+        border-radius: 10px;
+        padding: 12px;
+      }
+
+      .resultHeader {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .badge {
+        border: 1px solid var(--border);
+        background: rgba(96, 165, 250, 0.12);
+        padding: 4px 8px;
+        border-radius: 999px;
+        font-weight: 700;
+        color: var(--accent);
+        font-size: 12px;
+      }
+
+      pre {
+        margin: 0;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        color: var(--text);
+        font-size: 13px;
+        line-height: 1.35;
+      }
+
+      .small {
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+
+      .endpointRow {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+        align-items: end;
+      }
+
+      .link {
+        color: var(--accent);
+        text-decoration: none;
+      }
+      .link:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <div class="topbar">
+        <div>
+          <h1>RAG Retrieval Debug</h1>
+          <div class="small">
+            Calls your API retrieval endpoint and shows the top chunks + scores.
+          </div>
+        </div>
+        <div class="pill">
+          Tip: open this at
+          <a class="link" href="/static/retrieve.html">/static/retrieve.html</a>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="card">
+          <div class="endpointRow">
+            <div>
+              <label for="endpoint">Retrieve endpoint</label>
+              <input
+                id="endpoint"
+                type="text"
+                value="/retrieve"
+                placeholder="/retrieve or /v1/retrieve"
+              />
+              <div class="small">
+                If your router is under /v1, set this to
+                <code>/v1/retrieve</code>.
+              </div>
+            </div>
+            <div class="actions">
+              <button id="btnRun">Run retrieval</button>
+              <button id="btnClear" type="button">Clear</button>
+            </div>
+          </div>
+
+          <label for="query">Query</label>
+          <textarea
+            id="query"
+            placeholder="Ask a question about your docs..."
+          ></textarea>
+
+          <div class="grid2">
+            <div>
+              <label for="docIds">Doc IDs (optional)</label>
+              <input
+                id="docIds"
+                type="text"
+                placeholder="e.g. 101, 102 (leave empty for all)"
+              />
+              <div class="small">
+                For “selected” scope: comma-separated document ids.
+              </div>
+            </div>
+
+            <div>
+              <label for="useText">Use text search (Oracle Text)</label>
+              <select id="useText">
+                <option value="true" selected>true</option>
+                <option value="false">false</option>
+              </select>
+              <div class="small">
+                If your CTXSYS.CONTEXT index isn’t created yet, set to false.
+              </div>
+            </div>
+          </div>
+
+          <div class="grid4">
+            <div>
+              <label for="kVec">k_vec</label>
+              <input id="kVec" type="number" min="1" max="50" value="10" />
+            </div>
+            <div>
+              <label for="kText">k_text</label>
+              <input id="kText" type="number" min="1" max="50" value="10" />
+            </div>
+            <div>
+              <label for="alpha">alpha</label>
+              <input
+                id="alpha"
+                type="number"
+                step="0.05"
+                min="0"
+                max="1"
+                value="0.70"
+              />
+              <div class="small">Higher = more vector weight.</div>
+            </div>
+            <div>
+              <label for="maxChars">Max chars per chunk</label>
+              <input
+                id="maxChars"
+                type="number"
+                min="200"
+                max="5000"
+                value="1200"
+              />
+            </div>
+          </div>
+
+          <div id="status" class="status"></div>
+        </div>
+
+        <div class="card">
+          <div class="resultHeader">
+            <div class="meta">
+              <span class="badge">Results</span>
+              <span id="resultCount">0</span>
+            </div>
+            <div class="meta">
+              <span class="small" id="timing"></span>
+            </div>
+          </div>
+
+          <div id="results" class="results"></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+
+      function parseDocIds(input) {
+        const s = (input || '').trim();
+        if (!s) return null;
+        const parts = s
+          .split(',')
+          .map((x) => x.trim())
+          .filter(Boolean);
+        const ids = parts
+          .map((p) => Number(p))
+          .filter((n) => Number.isFinite(n) && n > 0);
+        return ids.length ? ids : null;
+      }
+
+      function setStatus(msg, kind = '') {
+        const el = $('status');
+        el.textContent = msg || '';
+        el.className = 'status ' + (kind || '');
+      }
+
+      function escapeHtml(str) {
+        return (str || '')
+          .replaceAll('&', '&amp;')
+          .replaceAll('<', '&lt;')
+          .replaceAll('>', '&gt;');
+      }
+
+      function fmtPages(ps, pe) {
+        if (ps == null) return '';
+        if (pe == null || pe === ps) return `p${ps}`;
+        return `p${ps}-${pe}`;
+      }
+
+      function pickScore(r) {
+        // Prefer hybrid_score, then text_score, then vector_distance (inverted)
+        if (r.hybrid_score != null)
+          return { label: 'hybrid', val: r.hybrid_score };
+        if (r.text_score != null) return { label: 'text', val: r.text_score };
+        if (r.vector_distance != null)
+          return { label: 'vecDist', val: r.vector_distance };
+        return { label: 'score', val: 0 };
+      }
+
+      function renderResults(resp, maxChars) {
+        const resultsEl = $('results');
+        resultsEl.innerHTML = '';
+
+        const results = resp.results || [];
+        $('resultCount').textContent = String(results.length);
+
+        for (const r of results) {
+          const pages = fmtPages(r.page_start, r.page_end);
+          const section = r.section_path ? r.section_path : '';
+          const score = pickScore(r);
+
+          let text = r.chunk_text || '';
+          if (text.length > maxChars)
+            text = text.slice(0, maxChars).trimEnd() + '…';
+
+          const meta = [
+            `doc ${r.doc_id}`,
+            `chunk ${r.chunk_id}`,
+            pages ? pages : null,
+            section ? section : null,
+            r.source ? `src:${r.source}` : null,
+            score ? `${score.label}:${Number(score.val).toFixed(4)}` : null,
+            r.vector_distance != null
+              ? `dist:${Number(r.vector_distance).toFixed(4)}`
+              : null,
+            r.text_score != null
+              ? `t:${Number(r.text_score).toFixed(2)}`
+              : null,
+          ]
+            .filter(Boolean)
+            .join(' • ');
+
+          const citationHandle = `[${r.doc_id}:${r.chunk_id}]`;
+
+          const div = document.createElement('div');
+          div.className = 'result';
+          div.innerHTML = `
+            <div class="resultHeader">
+              <div class="meta">
+                <span class="badge">${escapeHtml(citationHandle)}</span>
+                <span>${escapeHtml(meta)}</span>
+              </div>
+              <div class="meta">
+                <button type="button" data-copy="${escapeHtml(
+                  citationHandle
+                )}">Copy cite</button>
+              </div>
+            </div>
+            <pre>${escapeHtml(text)}</pre>
+          `;
+          div
+            .querySelector('button[data-copy]')
+            .addEventListener('click', async (e) => {
+              const v = e.currentTarget.getAttribute('data-copy');
+              try {
+                await navigator.clipboard.writeText(v);
+                setStatus(`Copied ${v}`, 'ok');
+                setTimeout(() => setStatus(''), 1500);
+              } catch {
+                setStatus(
+                  'Clipboard copy failed (browser permissions).',
+                  'error'
+                );
+              }
+            });
+
+          resultsEl.appendChild(div);
+        }
+      }
+
+      async function run() {
+        const endpoint = $('endpoint').value.trim() || '/retrieve';
+        const query = $('query').value.trim();
+        const docIds = parseDocIds($('docIds').value);
+        const useText = $('useText').value === 'true';
+        const kVec = Number($('kVec').value) || 10;
+        const kText = Number($('kText').value) || 10;
+        const alpha = Number($('alpha').value);
+        const maxChars = Number($('maxChars').value) || 1200;
+
+        if (!query) {
+          setStatus('Please enter a query.', 'error');
+          return;
+        }
+
+        const payload = {
+          query,
+          doc_ids: docIds,
+          k_vec: kVec,
+          k_text: kText,
+          use_text: useText,
+          alpha: Number.isFinite(alpha) ? alpha : 0.7,
+        };
+
+        setStatus('Running retrieval...', '');
+        $('btnRun').disabled = true;
+
+        const t0 = performance.now();
+        try {
+          const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(payload),
+          });
+
+          const text = await res.text();
+          let data;
+          try {
+            data = JSON.parse(text);
+          } catch {
+            data = { raw: text };
+          }
+
+          if (!res.ok) {
+            setStatus(`Error ${res.status}: ${data?.detail || text}`, 'error');
+            $('timing').textContent = '';
+            $('resultCount').textContent = '0';
+            $('results').innerHTML = '';
+            return;
+          }
+
+          const t1 = performance.now();
+          $('timing').textContent = `(${(t1 - t0).toFixed(0)} ms)`;
+          setStatus('Done.', 'ok');
+          renderResults(data, maxChars);
+        } catch (e) {
+          setStatus(`Request failed: ${e}`, 'error');
+          $('timing').textContent = '';
+        } finally {
+          $('btnRun').disabled = false;
+        }
+      }
+
+      $('btnRun').addEventListener('click', run);
+      $('btnClear').addEventListener('click', () => {
+        $('query').value = '';
+        $('docIds').value = '';
+        $('results').innerHTML = '';
+        $('resultCount').textContent = '0';
+        $('timing').textContent = '';
+        setStatus('');
+      });
+
+      // Ctrl+Enter to run
+      $('query').addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.key === 'Enter') run();
+      });
+    </script>
+  </body>
+</html>

@@ -10,6 +10,8 @@ from schemas.documents import ProcessResponse
 from services.ollama_client import OllamaClient
 from services.embedding_service import EmbeddingService
 from services.ingest_pipeline import IngestPipeline
+from services.job_service import JobService
+
 from core.config import settings
 
 
@@ -38,8 +40,13 @@ async def upload_document(
         title=title,
         file_bytes=data,
     )
+    job = JobService().enqueue_ingest(db, tenant_id=me.tenant_id, doc_id=doc.doc_id)
+    print(job)
     return UploadResponse(
-        doc_id=doc.doc_id, version_id=ver.version_id, status=doc.status
+        doc_id=doc.doc_id,
+        version_id=ver.version_id,
+        status=doc.status,
+        job_id=job.job_id,
     )
 
 

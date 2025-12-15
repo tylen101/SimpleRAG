@@ -289,6 +289,50 @@ class DocumentPermission(Base):
     document: Mapped["Document"] = relationship(back_populates="permissions")
 
 
+class DocumentJob(Base):
+    __tablename__ = "document_jobs"
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('queued','running','succeeded','failed','canceled')",
+            name="ck_docjobs_status",
+        ),
+    )
+
+    job_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    tenant_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("tenants.tenant_id"), nullable=False, index=True
+    )
+    doc_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("documents.doc_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    version_id: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        ForeignKey("document_versions.version_id", ondelete="SET NULL"),
+        index=True,
+    )
+
+    status: Mapped[str] = mapped_column(String(20), nullable=False)
+    priority: Mapped[int] = mapped_column(Integer, nullable=False, default=100)
+
+    attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    max_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=3)
+
+    locked_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    locked_by: Mapped[Optional[str]] = mapped_column(String(200))
+
+    last_error: Mapped[Optional[str]] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.systimestamp(), nullable=False
+    )
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+
+    tenant: Mapped["Tenant"] = relationship()
+    document: Mapped["Document"] = relationship()
+
+
 class Conversation(Base):
     __tablename__ = "conversations"
 

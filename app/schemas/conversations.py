@@ -1,5 +1,5 @@
-from pydantic import BaseModel
-from typing import Optional, List
+from pydantic import BaseModel, Field
+from typing import Optional, List, Literal
 
 
 class ConversationCreate(BaseModel):
@@ -14,13 +14,13 @@ class ConversationOut(BaseModel):
 
 
 class ChatScope(BaseModel):
-    mode: str = "all"  # "all" or "selected"
-    doc_ids: List[int] = []
+    mode: Literal["all", "selected"] = "all"
+    doc_ids: List[int] = Field(default_factory=list)
 
 
 class ChatMessageIn(BaseModel):
     content: str
-    scope: ChatScope = ChatScope()
+    scope: ChatScope = Field(default_factory=ChatScope)
     k_vec: int = 8
     k_text: int = 6
     use_text: bool = True

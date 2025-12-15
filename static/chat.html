@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>RAG Chat Debug</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      :root {
+        --bg: #0f172a;
+        --panel: #020617;
+        --border: #1e293b;
+        --text: #e5e7eb;
+        --muted: #94a3b8;
+        --accent: #60a5fa;
+        --danger: #ef4444;
+        --ok: #22c55e;
+      }
+
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+          Roboto, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        padding: 24px;
+      }
+
+      .container {
+        max-width: 1100px;
+        margin: 0 auto;
+      }
+
+      h1 {
+        margin: 0 0 12px;
+        font-size: 20px;
+      }
+
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 16px;
+        margin-bottom: 14px;
+      }
+
+      label {
+        display: block;
+        font-weight: 700;
+        margin: 10px 0 6px;
+      }
+
+      input[type='text'],
+      input[type='number'],
+      textarea,
+      select {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 10px 12px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: #0b1220;
+        color: var(--text);
+        outline: none;
+      }
+
+      textarea {
+        min-height: 90px;
+        resize: vertical;
+      }
+
+      .grid2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .grid4 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr 1fr;
+        gap: 12px;
+      }
+
+      .actions {
+        display: flex;
+        gap: 10px;
+        align-items: flex-end;
+        margin-top: 12px;
+      }
+
+      button {
+        border: 1px solid var(--border);
+        background: rgba(96, 165, 250, 0.12);
+        color: var(--text);
+        padding: 10px 14px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: 800;
+      }
+      button:hover {
+        border-color: rgba(96, 165, 250, 0.55);
+      }
+      button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .status {
+        margin-top: 10px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .status.error {
+        color: var(--danger);
+      }
+      .status.ok {
+        color: var(--ok);
+      }
+
+      .chat {
+        display: grid;
+        gap: 10px;
+        margin-top: 10px;
+      }
+
+      .bubble {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px;
+        background: rgba(148, 163, 184, 0.06);
+      }
+
+      .bubble.user {
+        background: rgba(96, 165, 250, 0.12);
+      }
+
+      .bubbleHeader {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .bubbleContent {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        line-height: 1.35;
+        font-size: 14px;
+      }
+
+      .citations {
+        margin-top: 10px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .cite {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 6px 10px;
+        background: rgba(148, 163, 184, 0.08);
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .badge {
+        border: 1px solid var(--border);
+        background: rgba(96, 165, 250, 0.12);
+        padding: 2px 8px;
+        border-radius: 999px;
+        color: var(--accent);
+        font-weight: 800;
+      }
+
+      .small {
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+
+      .pill {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+        border: 1px solid var(--border);
+        background: rgba(148, 163, 184, 0.08);
+        padding: 8px 10px;
+        border-radius: 999px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      a.link {
+        color: var(--accent);
+        text-decoration: none;
+      }
+      a.link:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <div class="topbar">
+        <div>
+          <h1>RAG Chat Debug</h1>
+          <div class="small">
+            Create a conversation, send messages, see citations.
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="grid">
+          <div>
+            <label for="chatModel">Chat model (for new conversation)</label>
+            <input
+              id="chatModel"
+              type="text"
+              placeholder="leave empty to use server default"
+            />
+            <div class="small">Used only when creating a new conversation.</div>
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div>
+            <label for="conversationId">Conversation ID</label>
+            <input
+              id="conversationId"
+              type="number"
+              min="1"
+              placeholder="Click Create New or paste an id"
+            />
+          </div>
+
+          <div class="actions">
+            <button id="btnCreate">Create New Conversation</button>
+            <button id="btnClearChat" type="button">Clear UI</button>
+          </div>
+        </div>
+
+        <div id="status" class="status"></div>
+      </div>
+
+      <div class="card">
+        <div class="grid2">
+          <div>
+            <label for="scopeMode">Scope</label>
+            <select id="scopeMode">
+              <option value="all" selected>all</option>
+              <option value="selected">selected</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="docIds">Doc IDs (when scope=selected)</label>
+            <input id="docIds" type="text" placeholder="e.g. 101, 102" />
+          </div>
+        </div>
+
+        <div class="grid4">
+          <div>
+            <label for="kVec">k_vec</label>
+            <input id="kVec" type="number" min="1" max="50" value="8" />
+          </div>
+          <div>
+            <label for="kText">k_text</label>
+            <input id="kText" type="number" min="1" max="50" value="6" />
+          </div>
+          <div>
+            <label for="useText">use_text</label>
+            <select id="useText">
+              <option value="true" selected>true</option>
+              <option value="false">false</option>
+            </select>
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <div class="actions" style="margin-top: 0">
+              <button id="btnSend">Send</button>
+            </div>
+          </div>
+        </div>
+
+        <label for="message">Message</label>
+        <textarea
+          id="message"
+          placeholder="Ask a question... (Ctrl+Enter to send)"
+        ></textarea>
+
+        <div class="small" id="timing"></div>
+      </div>
+
+      <div class="card">
+        <div class="bubbleHeader">
+          <div><span class="badge">Transcript</span></div>
+          <div class="small" id="msgCount">0 messages</div>
+        </div>
+        <div id="chat" class="chat"></div>
+      </div>
+    </div>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+
+      const state = {
+        messages: [], // {role, content, citations?}
+      };
+
+      function setStatus(msg, kind = '') {
+        const el = $('status');
+        el.textContent = msg || '';
+        el.className = 'status ' + (kind || '');
+      }
+
+      function parseDocIds(input) {
+        const s = (input || '').trim();
+        if (!s) return [];
+        return s
+          .split(',')
+          .map((x) => x.trim())
+          .filter(Boolean)
+          .map((x) => Number(x))
+          .filter((n) => Number.isFinite(n) && n > 0);
+      }
+
+      function render() {
+        const chatEl = $('chat');
+        chatEl.innerHTML = '';
+
+        for (const m of state.messages) {
+          const div = document.createElement('div');
+          div.className =
+            'bubble ' + (m.role === 'user' ? 'user' : 'assistant');
+
+          const headerRole = m.role === 'user' ? 'USER' : 'ASSISTANT';
+          div.innerHTML = `
+            <div class="bubbleHeader">
+              <div>${headerRole}</div>
+              <div class="small">${m.meta || ''}</div>
+            </div>
+            <div class="bubbleContent"></div>
+          `;
+
+          div.querySelector('.bubbleContent').textContent = m.content || '';
+
+          if (
+            m.role === 'assistant' &&
+            Array.isArray(m.citations) &&
+            m.citations.length
+          ) {
+            const cites = document.createElement('div');
+            cites.className = 'citations';
+            for (const c of m.citations) {
+              const handle = `[${c.doc_id}:${c.chunk_id}]`;
+              const chip = document.createElement('div');
+              chip.className = 'cite';
+              chip.innerHTML = `
+                <span class="badge">${handle}</span>
+                <span>${
+                  c.page_start != null
+                    ? `p${c.page_start}${
+                        c.page_end && c.page_end !== c.page_start
+                          ? `-${c.page_end}`
+                          : ''
+                      }`
+                    : ''
+                }</span>
+                <span class="small">score:${Number(c.score).toFixed(4)}</span>
+                <button type="button" data-copy="${handle}">Copy</button>
+              `;
+              chip
+                .querySelector('button[data-copy]')
+                .addEventListener('click', async (e) => {
+                  const v = e.currentTarget.getAttribute('data-copy');
+                  try {
+                    await navigator.clipboard.writeText(v);
+                    setStatus(`Copied ${v}`, 'ok');
+                    setTimeout(() => setStatus(''), 1200);
+                  } catch {
+                    setStatus(
+                      'Clipboard copy failed (browser permissions).',
+                      'error'
+                    );
+                  }
+                });
+              cites.appendChild(chip);
+            }
+            div.appendChild(cites);
+          }
+
+          chatEl.appendChild(div);
+        }
+
+        $('msgCount').textContent = `${state.messages.length} messages`;
+      }
+
+      async function createConversation() {
+        const model = ($('chatModel').value || '').trim();
+        setStatus('Creating conversation...', '');
+        $('btnCreate').disabled = true;
+
+        try {
+          const payload = {
+            chat_model_id: model || null,
+            title: null,
+          };
+
+          const res = await fetch('/conversations', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(payload),
+          });
+
+          const text = await res.text();
+          let data;
+          try {
+            data = JSON.parse(text);
+          } catch {
+            data = { raw: text };
+          }
+
+          if (!res.ok) {
+            setStatus(`Error ${res.status}: ${data?.detail || text}`, 'error');
+            return;
+          }
+
+          $('conversationId').value = data.conversation_id;
+          setStatus(`Conversation created: ${data.conversation_id}`, 'ok');
+        } catch (e) {
+          setStatus(`Create failed: ${e}`, 'error');
+        } finally {
+          $('btnCreate').disabled = false;
+        }
+      }
+
+      async function sendMessage() {
+        const conversationId = Number($('conversationId').value);
+        if (!Number.isFinite(conversationId) || conversationId <= 0) {
+          setStatus('Please create or enter a valid conversation id.', 'error');
+          return;
+        }
+
+        const content = ($('message').value || '').trim();
+        if (!content) {
+          setStatus('Please enter a message.', 'error');
+          return;
+        }
+
+        const scopeMode = $('scopeMode').value;
+        const docIds = parseDocIds($('docIds').value);
+        if (scopeMode === 'selected' && docIds.length === 0) {
+          setStatus(
+            "Scope is 'selected' but no doc ids were provided.",
+            'error'
+          );
+          return;
+        }
+
+        const payload = {
+          content,
+          scope: { mode: scopeMode, doc_ids: docIds },
+          k_vec: Number($('kVec').value) || 8,
+          k_text: Number($('kText').value) || 6,
+          use_text: $('useText').value === 'true',
+        };
+
+        // Optimistic UI for user message
+        state.messages.push({ role: 'user', content });
+        render();
+
+        setStatus('Sending...', '');
+        $('btnSend').disabled = true;
+        $('timing').textContent = '';
+
+        const t0 = performance.now();
+        try {
+          const res = await fetch(`/conversations/${conversationId}/messages`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(payload),
+          });
+
+          const text = await res.text();
+          let data;
+          try {
+            data = JSON.parse(text);
+          } catch {
+            data = { raw: text };
+          }
+
+          if (!res.ok) {
+            setStatus(`Error ${res.status}: ${data?.detail || text}`, 'error');
+            // Add an error bubble
+            state.messages.push({
+              role: 'assistant',
+              content: `ERROR: ${data?.detail || text}`,
+              meta: `HTTP ${res.status}`,
+            });
+            render();
+            return;
+          }
+
+          const t1 = performance.now();
+          $('timing').textContent = `(${(t1 - t0).toFixed(0)} ms)`;
+
+          state.messages.push({
+            role: 'assistant',
+            content: data.answer || '',
+            citations: data.citations || [],
+            meta: `message_id=${data.message_id}`,
+          });
+          render();
+
+          setStatus('Done.', 'ok');
+          $('message').value = '';
+        } catch (e) {
+          setStatus(`Send failed: ${e}`, 'error');
+          state.messages.push({ role: 'assistant', content: `ERROR: ${e}` });
+          render();
+        } finally {
+          $('btnSend').disabled = false;
+        }
+      }
+
+      $('btnCreate').addEventListener('click', createConversation);
+      $('btnSend').addEventListener('click', sendMessage);
+
+      $('btnClearChat').addEventListener('click', () => {
+        state.messages = [];
+        render();
+        setStatus('');
+        $('timing').textContent = '';
+      });
+
+      $('message').addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.key === 'Enter') sendMessage();
+      });
+
+      render();
+    </script>
+  </body>
+</html>

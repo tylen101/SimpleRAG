@@ -39,3 +39,10 @@ class ChatMessageOut(BaseModel):
     message_id: int
     answer: str
     citations: List[Citation]
+
+
+class ChatMessageRecord(BaseModel):
+    message_id: int
+    role: str
+    content: str
+    citations: List[Citation] = []

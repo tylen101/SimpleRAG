@@ -145,6 +145,33 @@ CREATE TABLE messages (
   created_at      TIMESTAMP DEFAULT SYSTIMESTAMP
 );
 
+CREATE TABLE message_citations (
+  citation_id    NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+
+  message_id     NUMBER NOT NULL
+    REFERENCES messages(message_id) ON DELETE CASCADE,
+
+  doc_id         NUMBER NOT NULL
+    REFERENCES documents(doc_id) ON DELETE CASCADE,
+
+  chunk_id       NUMBER NOT NULL
+    REFERENCES document_chunks(chunk_id) ON DELETE CASCADE,
+
+  page_start     NUMBER,
+  page_end       NUMBER,
+  section_path   VARCHAR2(2000),
+
+  score          NUMBER,
+  created_at     TIMESTAMP DEFAULT SYSTIMESTAMP,
+
+  CONSTRAINT uq_message_chunk UNIQUE (message_id, chunk_id)
+);
+
+CREATE INDEX ix_msgcit_message ON message_citations(message_id);
+CREATE INDEX ix_msgcit_doc ON message_citations(doc_id);
+CREATE INDEX ix_msgcit_chunk ON message_citations(chunk_id);
+
+
 CREATE TABLE retrieval_events (
   event_id     NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   message_id   NUMBER NOT NULL REFERENCES messages(message_id) ON DELETE CASCADE,

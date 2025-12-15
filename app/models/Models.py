@@ -14,6 +14,7 @@ from sqlalchemy import (
     UniqueConstraint,
     LargeBinary,
     func,
+    Float,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.types import UserDefinedType
@@ -386,6 +387,47 @@ class Message(Base):
     retrieval_events: Mapped[List["RetrievalEvent"]] = relationship(
         back_populates="message", cascade="all, delete-orphan"
     )
+    citations: Mapped[List["MessageCitation"]] = relationship(
+        back_populates="message", cascade="all, delete-orphan"
+    )
+
+
+class MessageCitation(Base):
+    __tablename__ = "message_citations"
+
+    citation_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+
+    message_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("messages.message_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    doc_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("documents.doc_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    chunk_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("document_chunks.chunk_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    page_start: Mapped[Optional[int]] = mapped_column(Integer)
+    page_end: Mapped[Optional[int]] = mapped_column(Integer)
+    section_path: Mapped[Optional[str]] = mapped_column(String(2000))
+    score: Mapped[Optional[float]] = mapped_column(Float)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.systimestamp(), nullable=False
+    )
+
+    message: Mapped["Message"] = relationship(back_populates="citations")
 
 
 class RetrievalEvent(Base):

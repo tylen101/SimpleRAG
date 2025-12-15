@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Local RAG – Document Upload</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <style>
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+        background: #0f172a;
+        color: #e5e7eb;
+        padding: 2rem;
+      }
+
+      h1 {
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+      }
+
+      .card {
+        background: #020617;
+        border: 1px solid #1e293b;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        max-width: 900px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+      }
+
+      input[type='file'],
+      input[type='text'] {
+        width: 100%;
+        padding: 0.5rem;
+        margin-bottom: 1rem;
+        background: #020617;
+        border: 1px solid #334155;
+        border-radius: 4px;
+        color: #e5e7eb;
+      }
+
+      button {
+        padding: 0.6rem 1.2rem;
+        background: #2563eb;
+        border: none;
+        border-radius: 4px;
+        color: white;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .btn-secondary {
+        background: #334155;
+      }
+
+      .btn-small {
+        padding: 0.35rem 0.7rem;
+        font-size: 0.85rem;
+        border-radius: 6px;
+      }
+
+      .status {
+        margin-top: 1rem;
+        font-size: 0.9rem;
+        white-space: pre-wrap;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+      }
+
+      th,
+      td {
+        padding: 0.5rem;
+        border-bottom: 1px solid #1e293b;
+        text-align: left;
+        font-size: 0.85rem;
+        vertical-align: top;
+      }
+
+      th {
+        color: #93c5fd;
+        font-weight: 600;
+      }
+
+      .ok {
+        color: #22c55e;
+      }
+
+      .err {
+        color: #ef4444;
+      }
+
+      .muted {
+        color: #94a3b8;
+      }
+
+      .rowStatus {
+        font-size: 0.8rem;
+        margin-top: 0.25rem;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1>📄 Local RAG – Document Upload</h1>
+
+    <!-- Upload Card -->
+    <div class="card">
+      <form id="uploadForm">
+        <label for="title">Title (optional)</label>
+        <input
+          type="text"
+          id="title"
+          name="title"
+          placeholder="Document title"
+        />
+
+        <label for="file">Select document</label>
+        <input type="file" id="file" name="file" required />
+
+        <button type="submit">Upload</button>
+      </form>
+
+      <div id="uploadStatus" class="status"></div>
+    </div>
+
+    <!-- Document List -->
+    <div class="card">
+      <div style="display: flex; gap: 0.75rem; align-items: center">
+        <h2 style="margin: 0">Uploaded Documents</h2>
+        <button class="btn-secondary" onclick="loadDocuments()">Refresh</button>
+      </div>
+
+      <table id="docsTable">
+        <thead>
+          <tr>
+            <th style="width: 70px">ID</th>
+            <th>Title</th>
+            <th>Filename</th>
+            <th style="width: 120px">Status</th>
+            <th style="width: 140px">Actions</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+      <div id="tableStatus" class="status muted"></div>
+    </div>
+
+    <script>
+      const API_BASE = 'http://localhost:8000';
+
+      const uploadForm = document.getElementById('uploadForm');
+      const statusDiv = document.getElementById('uploadStatus');
+      const docsTableBody = document.querySelector('#docsTable tbody');
+      const tableStatus = document.getElementById('tableStatus');
+
+      // Track per-doc processing state so we can disable buttons properly
+      const processingMap = new Map(); // doc_id -> boolean
+
+      uploadForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        statusDiv.textContent = '';
+        statusDiv.className = 'status';
+
+        const fileInput = document.getElementById('file');
+        if (!fileInput.files.length) {
+          statusDiv.textContent = 'Please select a file.';
+          statusDiv.classList.add('err');
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+
+        const title = document.getElementById('title').value;
+        if (title) formData.append('title', title);
+
+        try {
+          const res = await fetch(`${API_BASE}/documents`, {
+            method: 'POST',
+            body: formData,
+          });
+
+          if (!res.ok) {
+            const txt = await res.text();
+            throw new Error(txt || 'Upload failed');
+          }
+
+          const data = await res.json();
+          statusDiv.innerHTML = `
+            <span class="ok">
+              Uploaded ✔
+              doc_id=${data.doc_id}, version_id=${data.version_id}, status=${data.status}
+            </span>
+          `;
+          uploadForm.reset();
+          loadDocuments();
+        } catch (err) {
+          statusDiv.textContent = `Error: ${err.message}`;
+          statusDiv.classList.add('err');
+        }
+      });
+
+      async function processDocument(docId) {
+        if (processingMap.get(docId)) return;
+        processingMap.set(docId, true);
+
+        // Update UI immediately
+        const rowStatusEl = document.getElementById(`rowStatus-${docId}`);
+        const btn = document.getElementById(`processBtn-${docId}`);
+        if (btn) btn.disabled = true;
+        if (rowStatusEl) {
+          rowStatusEl.textContent = 'Processing...';
+          rowStatusEl.className = 'rowStatus muted';
+        }
+
+        try {
+          const res = await fetch(`${API_BASE}/documents/${docId}/process`, {
+            method: 'POST',
+          });
+
+          if (!res.ok) {
+            const txt = await res.text();
+            throw new Error(txt || 'Process failed');
+          }
+
+          const data = await res.json();
+
+          // Show a nice per-row message
+          if (rowStatusEl) {
+            if (data.status === 'ready') {
+              const ocr = data?.notes?.ocr_needed ? ' (OCR needed)' : '';
+              rowStatusEl.textContent = `✅ ready — chunks=${data.chunks}, embedded=${data.embedded}${ocr}`;
+              rowStatusEl.className = 'rowStatus ok';
+            } else {
+              rowStatusEl.textContent = `❌ ${data.status} — ${
+                data.error || 'unknown error'
+              }`;
+              rowStatusEl.className = 'rowStatus err';
+            }
+          }
+
+          // Refresh document list to update status column
+          await loadDocuments();
+        } catch (err) {
+          if (rowStatusEl) {
+            rowStatusEl.textContent = `❌ Error: ${err.message}`;
+            rowStatusEl.className = 'rowStatus err';
+          }
+        } finally {
+          processingMap.set(docId, false);
+          const btn2 = document.getElementById(`processBtn-${docId}`);
+          if (btn2) btn2.disabled = false;
+        }
+      }
+
+      async function loadDocuments() {
+        docsTableBody.innerHTML = '';
+        tableStatus.textContent = '';
+
+        try {
+          const res = await fetch(`${API_BASE}/documents`);
+          if (!res.ok) throw new Error('Failed to fetch documents');
+          const docs = await res.json();
+
+          if (!Array.isArray(docs) || docs.length === 0) {
+            tableStatus.textContent = 'No documents yet.';
+            return;
+          }
+
+          for (const d of docs) {
+            const tr = document.createElement('tr');
+
+            const safeTitle = d.title || '';
+            const safeFilename = d.filename || '';
+            const safeStatus = d.status || '';
+
+            const disabled = processingMap.get(d.doc_id) ? 'disabled' : '';
+            const canProcess = safeStatus !== 'failed'; // you can tweak this
+
+            tr.innerHTML = `
+              <td>${d.doc_id}</td>
+              <td>${escapeHtml(safeTitle)}</td>
+              <td class="muted">${escapeHtml(safeFilename)}</td>
+              <td>
+                ${escapeHtml(safeStatus)}
+                <div id="rowStatus-${d.doc_id}" class="rowStatus muted"></div>
+              </td>
+              <td>
+                <button
+                  id="processBtn-${d.doc_id}"
+                  class="btn-small"
+                  ${disabled}
+                  ${canProcess ? '' : 'disabled'}
+                  onclick="processDocument(${d.doc_id})"
+                  title="Run extraction → chunking → embeddings"
+                >
+                  Process
+                </button>
+              </td>
+            `;
+
+            docsTableBody.appendChild(tr);
+          }
+        } catch (err) {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td colspan="5" class="err">Failed to load documents: ${escapeHtml(
+            err.message || 'unknown error'
+          )}</td>`;
+          docsTableBody.appendChild(tr);
+        }
+      }
+
+      function escapeHtml(str) {
+        return String(str)
+          .replaceAll('&', '&amp;')
+          .replaceAll('<', '&lt;')
+          .replaceAll('>', '&gt;')
+          .replaceAll('"', '&quot;')
+          .replaceAll("'", '&#039;');
+      }
+
+      // initial load
+      loadDocuments();
+    </script>
+  </body>
+</html>

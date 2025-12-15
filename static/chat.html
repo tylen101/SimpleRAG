@@ -312,9 +312,145 @@
         </div>
         <div id="chat" class="chat"></div>
       </div>
+
+      <!-- Source Modal -->
+      <div
+        id="sourceModal"
+        style="
+          display: none;
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.6);
+          padding: 24px;
+          z-index: 9999;
+        "
+      >
+        <div
+          style="
+            max-width: 1000px;
+            margin: 0 auto;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+          "
+        >
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              gap: 10px;
+            "
+          >
+            <div>
+              <div class="small" id="sourceMeta"></div>
+              <div style="font-weight: 900; margin-top: 4px" id="sourceTitle">
+                Source
+              </div>
+            </div>
+            <div class="actions" style="margin-top: 0">
+              <button id="btnCopySource">Copy text</button>
+              <button id="btnCloseSource" type="button">Close</button>
+            </div>
+          </div>
+          <div
+            style="
+              margin-top: 12px;
+              border-top: 1px solid var(--border);
+              padding-top: 12px;
+            "
+          >
+            <pre
+              id="sourceText"
+              style="
+                margin: 0;
+                white-space: pre-wrap;
+                word-wrap: break-word;
+                line-height: 1.35;
+                font-size: 13px;
+              "
+            ></pre>
+          </div>
+        </div>
+      </div>
     </div>
 
     <script>
+      function openModal() {
+        $('sourceModal').style.display = 'block';
+      }
+      function closeModal() {
+        $('sourceModal').style.display = 'none';
+      }
+
+      async function fetchChunk(chunkId, maxChars = 4000) {
+        const res = await fetch('/chunks/batch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ chunk_ids: [chunkId], max_chars: maxChars }),
+        });
+
+        const text = await res.text();
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch {
+          data = [];
+        }
+
+        if (!res.ok) throw new Error(data?.detail || text);
+        if (!Array.isArray(data) || data.length === 0) return null;
+        return data[0];
+      }
+
+      async function showSource(citation) {
+        // citation = {doc_id, chunk_id, page_start, page_end, section_path, score}
+        setStatus('Loading source...', '');
+        try {
+          const chunk = await fetchChunk(citation.chunk_id, 6000);
+          if (!chunk) {
+            setStatus('Source not found (maybe not in your tenant).', 'error');
+            return;
+          }
+
+          const pages =
+            chunk.page_start != null
+              ? `p${chunk.page_start}${
+                  chunk.page_end && chunk.page_end !== chunk.page_start
+                    ? `-${chunk.page_end}`
+                    : ''
+                }`
+              : '';
+
+          const header = `[${chunk.doc_id}:${chunk.chunk_id}]`;
+          $('sourceTitle').textContent = header;
+          $('sourceMeta').textContent =
+            [pages, chunk.section_path || ''].filter(Boolean).join(' • ') ||
+            '—';
+          $('sourceText').textContent = chunk.chunk_text || '';
+
+          $('btnCopySource').onclick = async () => {
+            try {
+              await navigator.clipboard.writeText(chunk.chunk_text || '');
+              setStatus('Copied source text.', 'ok');
+              setTimeout(() => setStatus(''), 1200);
+            } catch {
+              setStatus(
+                'Clipboard copy failed (browser permissions).',
+                'error'
+              );
+            }
+          };
+
+          openModal();
+          setStatus('', '');
+        } catch (e) {
+          setStatus(`Source fetch failed: ${e}`, 'error');
+        }
+      }
+
       const $ = (id) => document.getElementById(id);
 
       const state = {
@@ -369,20 +505,27 @@
               const handle = `[${c.doc_id}:${c.chunk_id}]`;
               const chip = document.createElement('div');
               chip.className = 'cite';
+              chip.style.cursor = 'pointer';
+
               chip.innerHTML = `
-                <span class="badge">${handle}</span>
-                <span>${
-                  c.page_start != null
-                    ? `p${c.page_start}${
-                        c.page_end && c.page_end !== c.page_start
-                          ? `-${c.page_end}`
-                          : ''
-                      }`
-                    : ''
-                }</span>
-                <span class="small">score:${Number(c.score).toFixed(4)}</span>
-                <button type="button" data-copy="${handle}">Copy</button>
-              `;
+  <span class="badge">${handle}</span>
+  <span>${
+    c.page_start != null
+      ? `p${c.page_start}${
+          c.page_end && c.page_end !== c.page_start ? `-${c.page_end}` : ''
+        }`
+      : ''
+  }</span>
+  <span class="small">score:${Number(c.score).toFixed(4)}</span>
+  <button type="button" data-copy="${handle}">Copy</button>
+`;
+
+              chip.addEventListener('click', (e) => {
+                // Don't trigger modal when clicking "Copy"
+                if (e.target && e.target.tagName === 'BUTTON') return;
+                showSource(c);
+              });
+
               chip
                 .querySelector('button[data-copy]')
                 .addEventListener('click', async (e) => {
@@ -398,6 +541,7 @@
                     );
                   }
                 });
+
               cites.appendChild(chip);
             }
             div.appendChild(cites);
@@ -551,6 +695,11 @@
 
       $('message').addEventListener('keydown', (e) => {
         if (e.ctrlKey && e.key === 'Enter') sendMessage();
+      });
+
+      $('btnCloseSource').addEventListener('click', closeModal);
+      $('sourceModal').addEventListener('click', (e) => {
+        if (e.target === $('sourceModal')) closeModal(); // click backdrop closes
       });
 
       render();

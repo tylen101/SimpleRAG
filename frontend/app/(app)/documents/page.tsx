@@ -1,6 +1,6 @@
 'use client';
 
-import { Table } from '@/components/Table/Table';
+import { ColumnDef, Table } from '@/components/Table/Table';
 import React, { useEffect, useState } from 'react';
 
 type DocRow = {
@@ -39,8 +39,6 @@ function Documents() {
   useEffect(() => {
     loadDocuments();
   }, []);
-
-  console.log(documents);
 
   const columns: ColumnDef<DocRow>[] = [
     { title: 'ID', key: 'doc_id', sortable: true },

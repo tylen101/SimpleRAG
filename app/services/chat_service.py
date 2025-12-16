@@ -209,7 +209,7 @@ class ChatService:
             if h.get("text_score") is not None:
                 return float(h["text_score"])
             if h.get("vector_distance") is not None:
-                return 1.0 / (1.0 float(h["vector_distance"]))
+                return 1.0 / (1.0 + float(h["vector_distance"]))
             return 0.0
 
         for h in hits:

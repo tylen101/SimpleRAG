@@ -14,8 +14,10 @@ class CurrentUser:
     tenant_id: int
 
 
+# use for dev testing for now
+# TODO: implement developer permissions
+# TODO: implement permissions...
 # def get_current_user() -> CurrentUser:
-#     # TODO: replace with real auth (JWT/SSO). For now, fixed user.
 #     return CurrentUser(user_id=3, tenant_id=1)
 
 

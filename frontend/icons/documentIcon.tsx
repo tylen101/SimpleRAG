@@ -1,6 +1,6 @@
 export const documentIcon = (
   <svg width="64px" height="64px" viewBox="0 0 24 24" fill="none">
-    <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+    <g id="SVGRepo_bgCarrier" strokeWidth="0"></g>
     <g
       id="SVGRepo_tracerCarrier"
       strokeLinecap="round"

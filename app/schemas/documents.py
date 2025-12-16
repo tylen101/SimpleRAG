@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
+from datetime import datetime
 
 
 class DocumentOut(BaseModel):
@@ -7,8 +8,14 @@ class DocumentOut(BaseModel):
     title: Optional[str] = None
     filename: Optional[str] = None
     mime_type: Optional[str] = None
-    sha256: str
     status: str
+    tenant_id: int
+    created_at: datetime
+
+    owner_user_id: Optional[int] = None
+
+    class Config:
+        from_attributes = True
 
 
 class UploadResponse(BaseModel):

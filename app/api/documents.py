@@ -50,12 +50,32 @@ async def upload_document(
     )
 
 
+def to_document_out(
+    doc: Document,
+    current_user_id: int,
+    *,
+    is_admin: bool = False,
+) -> DocumentOut:
+    out = DocumentOut(
+        doc_id=doc.doc_id,
+        title=doc.title,
+        filename=doc.filename,
+        mime_type=doc.mime_type,
+        status=doc.status,
+        tenant_id=doc.tenant_id,
+        created_at=doc.created_at,
+    )
+
+    if not is_admin and doc.owner_user_id != current_user_id:
+        out.owner_user_id = None
+    return out
+
+
 @router.get("/documents", response_model=list[DocumentOut])
 def list_documents(
     db: Session = Depends(get_db),
     me=Depends(get_current_user),
 ):
-    print("getting docs for ", me.user_id)
 
     docs = (
         db.query(Document)
@@ -63,17 +83,8 @@ def list_documents(
         .order_by(Document.created_at.desc())
         .all()
     )
-    return [
-        DocumentOut(
-            doc_id=d.doc_id,
-            title=d.title,
-            filename=d.filename,
-            mime_type=d.mime_type,
-            sha256=d.sha256,
-            status=d.status,
-        )
-        for d in docs
-    ]
+
+    return [to_document_out(d, me.user_id) for d in docs]
 
 
 @router.post("/documents/{doc_id}/process", response_model=ProcessResponse)

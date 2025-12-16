@@ -113,4 +113,5 @@ def get_profile(user: AppUser = Depends(get_current_user)):
         "display_name": user.display_name,
         "last_login": user.last_login,
         "created_at": user.created_at,
+        "user_id": user.user_id,
     }

@@ -27,6 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  console.log(user);
   const fetchUser = async () => {
     try {
       const res = await fetch(`${API_BASE}/auth/me`, {

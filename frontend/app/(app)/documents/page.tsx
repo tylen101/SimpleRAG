@@ -1,6 +1,15 @@
 'use client';
 
+import { Table } from '@/components/Table/Table';
 import React, { useEffect, useState } from 'react';
+
+type DocRow = {
+  doc_id: number;
+  title: string;
+  filename: string;
+  status: string;
+  created_at: string;
+};
 
 function Documents() {
   // load all documents user has access to
@@ -33,7 +42,32 @@ function Documents() {
 
   console.log(documents);
 
-  return <div>Documents</div>;
+  const columns: ColumnDef<DocRow>[] = [
+    { title: 'ID', key: 'doc_id', sortable: true },
+    { title: 'Title', key: 'title', sortable: true },
+    { title: 'File', key: 'filename', sortable: true },
+    { title: 'Status', key: 'status', sortable: true },
+    {
+      title: 'Created',
+      key: 'created_at',
+      sortable: true,
+      logic: (row: any) => new Date(row.created_at).toLocaleString(),
+    },
+  ];
+
+  return (
+    <div style={{ padding: 16, background: 'var(--background-primary)' }}>
+      {/* search bar */}
+      {/* search all values in data, filter results */}
+      <input type="text" placeholder="Search..." />
+      <Table
+        data={documents}
+        columns={columns}
+        loading={loading}
+        rowKey="doc_id"
+      />
+    </div>
+  );
 }
 
 export default Documents;

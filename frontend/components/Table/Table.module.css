@@ -1,0 +1,184 @@
+.dtWrap {
+  width: 100%;
+}
+
+.dtCard {
+  background: var(--background-secondary);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+}
+
+.dtTableScroll {
+  width: 100%;
+  overflow: auto;
+}
+
+.dtTable {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.dtTh {
+  position: sticky;
+  top: 0;
+  background: var(--background-secondary);
+  text-align: left;
+  padding: 14px 14px;
+  font-weight: 700;
+  border-bottom: 1px solid var(--border);
+  user-select: none;
+  white-space: nowrap;
+  z-index: 1;
+}
+
+.dtTh.isSortable {
+  cursor: pointer;
+}
+
+.dtTh.isSortable:hover {
+  background: color-mix(
+    in srgb,
+    var(--background-secondary) 88%,
+    var(--accent)
+  );
+}
+
+.dtThInner {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dtThTitle {
+  letter-spacing: 0.2px;
+}
+
+.dtSortIcon {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  opacity: 0.6;
+  transition: opacity 120ms ease;
+}
+
+.dtSortIcon.isActive {
+  opacity: 1;
+}
+
+.dtCaret {
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  opacity: 0.35;
+}
+
+.dtCaret.up {
+  border-bottom: 7px solid var(--text-secondary);
+}
+
+.dtCaret.down {
+  border-top: 7px solid var(--text-secondary);
+}
+
+.dtCaret.on {
+  opacity: 1;
+  filter: drop-shadow(
+    0 0 10px color-mix(in srgb, var(--accent) 60%, transparent)
+  );
+}
+
+.dtTr {
+  background: transparent;
+}
+
+.dtTd {
+  padding: 14px 14px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
+  vertical-align: middle;
+}
+
+.dtTr:hover .dtTd {
+  background: color-mix(
+    in srgb,
+    var(--background-secondary) 90%,
+    var(--accent)
+  );
+}
+
+.dtMuted {
+  color: var(--text-secondary);
+}
+
+.dtEmpty {
+  padding: 26px 14px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.dtFooterBar {
+  height: 10px;
+  background: linear-gradient(
+    to bottom,
+    color-mix(
+      in srgb,
+      var(--background-secondary) 85%,
+      var(--background-primary)
+    ),
+    var(--background-secondary)
+  );
+}
+
+/* ---------- Loading skeleton ---------- */
+.dtTableScroll.isLoading .dtTr:hover .dtTd {
+  background: transparent;
+}
+
+.dtSkel {
+  height: 14px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--background-primary) 70%, var(--border));
+  position: relative;
+  overflow: hidden;
+}
+
+.dtSkel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-60%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--background-secondary) 70%, transparent),
+    transparent
+  );
+  animation: dtShimmer 1.05s infinite;
+}
+
+@keyframes dtShimmer {
+  0% {
+    transform: translateX(-60%);
+  }
+  100% {
+    transform: translateX(160%);
+  }
+}
+
+.dtTableScroll::-webkit-scrollbar {
+  height: 10px;
+  width: 10px;
+}
+.dtTableScroll::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--border) 80%, transparent);
+  border-radius: 999px;
+}
+.dtTableScroll::-webkit-scrollbar-track {
+  background: transparent;
+}

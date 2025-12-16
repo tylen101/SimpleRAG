@@ -1,0 +1,25 @@
+.navbar {
+  display: flex;
+  position: sticky;
+  top: 0;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+  background: var(--background-secondary);
+  color: var(--text-primary);
+  height: 45px;
+}
+
+.navlinks a {
+  text-decoration: none;
+  color: var(--text-primary);
+  transition: color 0.3s;
+}
+
+.navlinks a:hover {
+  color: var(--accent, #00bcd4);
+}
+
+.active {
+  border-bottom: 2px solid var(--accent, #00bcd4);
+}

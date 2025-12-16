@@ -1,5 +1,12 @@
 from pydantic import BaseModel
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# TODO: fix the env dummy
+
+print("env load: ", os.getenv("SECRET_KEY"))
 
 
 class Settings(BaseModel):
@@ -11,8 +18,10 @@ class Settings(BaseModel):
     EMBEDDING_MODEL: str = os.getenv("EMBEDDING_MODEL", "qwen3-embedding")
     EMBEDDING_DIM: int = int(os.getenv("EMBEDDING_DIM", "4096"))
 
-    # Default chat model (user can override per conversation)
     DEFAULT_CHAT_MODEL: str = os.getenv("DEFAULT_CHAT_MODEL", "gpt-oss:20b")
+
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "itsasecret")
+    ALGORITHM: str = os.getenv("ALGORITHM", "HS256")
 
 
 settings = Settings()

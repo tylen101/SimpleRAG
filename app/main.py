@@ -41,15 +41,19 @@ app = FastAPI(
     lifespan=lifespan,  # ✅ THIS is the key
 )
 
-app.include_router(v1_router)
 
+origins = [
+    "http://localhost:3000",
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all HTTP methods (GET, POST, PUT, DELETE, etc.)
+    allow_headers=["*"],  # Allows all headers
 )
 
+app.include_router(v1_router)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 

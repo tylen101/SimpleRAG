@@ -1,0 +1,62 @@
+.navItem {
+  flex: 1;
+  height: 100%;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  text-decoration: none;
+  color: var(--clr-text);
+  font-size: 12px;
+
+  gap: 4px;
+  position: relative;
+
+  transition: color 150ms ease, opacity 150ms ease;
+}
+
+.navItem:not(.active) {
+  opacity: 0.7;
+}
+.navItem:hover {
+  opacity: 1;
+}
+.activeLink {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+
+  width: 40%;
+  height: 3px;
+  border-radius: 2px;
+
+  background: var(--accent, #4da3ff);
+}
+
+.iconSlot {
+  width: 22px;
+  height: 22px;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  transition: transform 150ms ease, opacity 120ms ease;
+}
+
+.navItem.active .iconSlot {
+  transform: translateY(-2px) scale(1.1);
+}
+.text {
+  font-size: 11px;
+  white-space: nowrap;
+
+  transition: opacity 150ms ease;
+}
+
+.navItem:not(.active) .text {
+  opacity: 0.8;
+}

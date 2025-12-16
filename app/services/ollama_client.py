@@ -22,8 +22,14 @@ class OllamaClient:
         async with httpx.AsyncClient(timeout=300) as client:
             print("building ollama post...", messages)
             r = await client.post(
+                # TODO: fix vars
                 "http://localhost:11434/api/chat",
-                json={"model": "gpt-oss:20b", "messages": messages, "stream": False},
+                json={
+                    "model": "gpt-oss:20b",
+                    "messages": messages,
+                    "stream": False,
+                    "options": {"num_ctx": 8192},
+                },
                 # {"model": model, "messages": messages, "stream": False},
             )
             r.raise_for_status()

@@ -1,8 +1,9 @@
 # app/models/base.py
 from __future__ import annotations
+from passlib.context import CryptContext
 
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 
 from sqlalchemy import (
     String,
@@ -15,14 +16,12 @@ from sqlalchemy import (
     LargeBinary,
     func,
     Float,
+    JSON,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.types import UserDefinedType
 
 
-# -------------------------
-# Base
-# -------------------------
 class Base(DeclarativeBase):
     pass
 
@@ -68,26 +67,60 @@ class Tenant(Base):
     )
 
 
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+
 class AppUser(Base):
     __tablename__ = "app_users"
 
     user_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+
     tenant_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("tenants.tenant_id"), nullable=False, index=True
+        Integer, ForeignKey("tenants.tenant_id"), nullable=False, index=True, default=1
     )
+
     email: Mapped[Optional[str]] = mapped_column(String(320))
     display_name: Mapped[Optional[str]] = mapped_column(String(200))
+
+    password_hash: Mapped[str] = mapped_column(
+        String,
+        nullable=False,
+    )
+
+    last_login: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    preferences: Mapped[Dict[str, Any]] = mapped_column(
+        JSON,
+        nullable=False,
+        default=dict,
+    )
+
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, server_default=func.systimestamp(), nullable=False
+        DateTime,
+        server_default=func.systimestamp(),
+        nullable=False,
     )
 
     tenant: Mapped["Tenant"] = relationship(back_populates="users")
+
     owned_documents: Mapped[List["Document"]] = relationship(
-        back_populates="owner", cascade="all"
+        back_populates="owner",
+        cascade="all, delete-orphan",
     )
+
     conversations: Mapped[List["Conversation"]] = relationship(
-        back_populates="user", cascade="all"
+        back_populates="user",
+        cascade="all, delete-orphan",
     )
+
+    def verify_password(self, password: str) -> bool:
+        return pwd_context.verify(password, self.password_hash)
+
+    def set_password(self, password: str) -> None:
+        self.password_hash = pwd_context.hash(password)
 
 
 class Document(Base):

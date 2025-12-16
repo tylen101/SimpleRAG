@@ -5,12 +5,22 @@
 );
 
 CREATE TABLE app_users (
-  user_id     NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  tenant_id   NUMBER NOT NULL REFERENCES tenants(tenant_id),
-  email       VARCHAR2(320),
-  display_name VARCHAR2(200),
-  created_at  TIMESTAMP DEFAULT SYSTIMESTAMP
+  user_id        NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  tenant_id      NUMBER NOT NULL REFERENCES tenants (tenant_id),
+  email          VARCHAR2(320),
+  display_name   VARCHAR2(200),
+  password_hash  VARCHAR2(255) NOT NULL,
+  last_login     TIMESTAMP WITH TIME ZONE,
+  preferences    JSON DEFAULT JSON_OBJECT(),
+  created_at     TIMESTAMP DEFAULT SYSTIMESTAMP NOT NULL
 );
+
+CREATE UNIQUE INDEX ux_app_users_tenant_email
+  ON app_users (tenant_id, email);
+
+CREATE INDEX idx_app_users_tenant_id
+  ON app_users (tenant_id);
+
 
 CREATE TABLE documents (
   doc_id         NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,

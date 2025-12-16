@@ -1,0 +1,15 @@
+.buttonContainer {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.icon {
+  display: flex;
+  align-items: center;
+}
+
+.buttonContainer svg {
+  height: 24px;
+  width: 24px;
+}

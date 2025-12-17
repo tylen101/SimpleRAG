@@ -37,6 +37,7 @@ a {
   --border: rgba(0, 0, 0, 0.1);
   --primary-red: #ff6f61;
   --text-primary: #0e0e0e;
+  --border-light: #ffffff0d;
 }
 
 [data-theme='dark'] {
@@ -44,7 +45,8 @@ a {
   --background-secondary: #242424;
   --text-primary: #f4f4f4;
   --text-secondary: #999;
-  --accent: #0070f3;
+  --accent: #0070b3;
   --border: rgba(255, 255, 255, 0.1);
   --primary-red: #ff6f61;
+  --border-light: #ffffff0d;
 }

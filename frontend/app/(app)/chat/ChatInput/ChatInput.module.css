@@ -1,0 +1,83 @@
+.wrapper {
+  width: 100%;
+  width: calc(100% - 20px);
+  padding: 1rem;
+  background: var(--background-primary);
+  /* border-top: 1px solid var(--border); */
+  position: sticky;
+  top: 100%;
+}
+
+.inputContainer {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  background: var(--background-secondary);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+
+  padding: 0.75rem 0.75rem;
+  transition: height 500ms linear;
+}
+
+.textarea {
+  flex: 1;
+  resize: none;
+  /* overflow: hidden; */
+
+  background: transparent;
+  border: none;
+  outline: none;
+
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  line-height: 1.4;
+
+  transition: height 500ms linear;
+  min-height: 24px;
+  max-height: 200px;
+}
+
+.textarea::placeholder {
+  color: var(--text-secondary);
+}
+
+.sendButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  height: 32px;
+  width: 32px;
+  border-radius: 8px;
+
+  border: none;
+  background: var(--accent);
+  color: #fff;
+
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: opacity 0.15s ease, transform 0.1s ease;
+}
+
+.sendButton:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.sendButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.hint {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.hint span {
+  font-family: monospace;
+}

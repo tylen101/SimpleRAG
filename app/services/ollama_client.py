@@ -28,7 +28,13 @@ class OllamaClient:
                     "model": "gpt-oss:20b",
                     "messages": messages,
                     "stream": False,
-                    "options": {"num_ctx": 8192},
+                    "options": {
+                        "num_ctx": 8192,
+                        "think": True,
+                        "reasoning": "high",
+                        "temperature": 0.3,
+                        "thinking": True,
+                    },
                 },
                 # {"model": model, "messages": messages, "stream": False},
             )

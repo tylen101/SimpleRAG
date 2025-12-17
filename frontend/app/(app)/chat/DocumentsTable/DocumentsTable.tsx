@@ -3,6 +3,8 @@
 import { ColumnDef, Table } from '@/components/Table/Table';
 import React, { useEffect, useState } from 'react';
 
+import styles from './DocumentsTable.module.css';
+
 type DocRow = {
   doc_id: number;
   title: string;
@@ -11,10 +13,17 @@ type DocRow = {
   created_at: string;
 };
 
-function Documents() {
+type DocumentsTableProps = {
+  selected: number[];
+  handleSelect: (row_id: number) => React.ReactNode;
+};
+
+function DocumentsTable({ selected = [], handleSelect }: DocumentsTableProps) {
   // load all documents user has access to
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const [expand, setExpand] = useState(true);
 
   const loadDocuments = async () => {
     try {
@@ -41,6 +50,20 @@ function Documents() {
   }, []);
 
   const columns: ColumnDef<DocRow>[] = [
+    {
+      title: 'Select',
+      key: 'select',
+      // sortable: true,
+      logic: (row: DocRow) => {
+        return (
+          <input
+            type="checkbox"
+            onChange={(e) => handleSelect(row.doc_id)}
+            checked={selected.includes(row.doc_id)}
+          />
+        );
+      },
+    },
     { title: 'Title', key: 'title', sortable: true },
     {
       title: 'Created',
@@ -54,18 +77,41 @@ function Documents() {
   ];
 
   return (
-    <div style={{ padding: 16, background: 'var(--background-primary)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
       {/* search bar */}
       {/* search all values in data, filter results */}
-      <input type="text" placeholder="Search..." />
+      <div style={{ display: 'flex' }}>
+        <button
+          style={{
+            background: 'none',
+            border: 'none',
+            // width: '100%',
+            // display: 'flex',
+            // justifyContent: 'center',
+          }}
+          onClick={() => setExpand(!expand)}
+        >
+          {!selected.length ? '🔸' : '🔹'}
+        </button>
+        <div className={styles.label}>
+          {selected.length} Document{selected.length !== 1 ? 's' : ''} selected{' '}
+          {!expand && 'click to expand'}
+        </div>
+      </div>
+
+      {/* {expand ? ( */}
       <Table
+        className={styles.table + ' ' + (expand ? styles.expanded : '')}
         data={documents}
         columns={columns}
         loading={loading}
         rowKey="doc_id"
       />
+      {/* ) : (
+        ''
+      )} */}
     </div>
   );
 }
 
-export default Documents;
+export default DocumentsTable;

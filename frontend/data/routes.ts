@@ -12,7 +12,7 @@ export const navLinks = [
   },
   {
     title: 'Chat',
-    url: '/myProgress',
+    url: '/chat',
     icon: progressIcon,
   },
   {

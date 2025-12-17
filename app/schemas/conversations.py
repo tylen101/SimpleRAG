@@ -23,7 +23,7 @@ class ChatMessageIn(BaseModel):
     scope: ChatScope = Field(default_factory=ChatScope)
     k_vec: int = 8
     k_text: int = 6
-    use_text: bool = True
+    use_text: bool = False  # TODO: experiment with defaults
 
 
 class Citation(BaseModel):

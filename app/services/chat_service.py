@@ -83,6 +83,7 @@ class ChatService:
             )
             .first()
         )
+
         if not convo:
             raise ValueError("Conversation not found")
 

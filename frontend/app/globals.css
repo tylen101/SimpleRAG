@@ -41,8 +41,10 @@ a {
 }
 
 [data-theme='dark'] {
-  --background-primary: #0e0e0e;
-  --background-secondary: #242424;
+  /* --background-primary: #0e0e0e;
+  --background-secondary: #242424; */
+  --background-primary: #242424;
+  --background-secondary: #0e0e0e;
   --text-primary: #f4f4f4;
   --text-secondary: #999;
   --accent: #0070b3;

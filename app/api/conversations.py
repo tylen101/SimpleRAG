@@ -15,31 +15,29 @@ from models.Models import Conversation, MessageCitation, Message
 from services.ollama_client import OllamaClient
 from services.retrieval_service import RetrievalService
 from services.chat_service import ChatService
+from core.config import settings
 
 router = APIRouter()
 
 
-@router.post("/conversations", response_model=ConversationOut)
+# create new conversation if no conversation_id is provided
 def create_conversation(
-    body: ConversationCreate,
-    db: Session = Depends(get_db),
-    me=Depends(get_current_user),
-):
-    print("getting convo for ", me.user_id)
+    db: Session,
+    tenant_id: int,
+    user_id: int,
+    title: str | None = None,
+    chat_model_id: str | str = settings.DEFAULT_CHAT_MODEL,
+) -> Conversation:
     convo = Conversation(
-        tenant_id=me.tenant_id,
-        user_id=me.user_id,
-        chat_model_id=body.chat_model_id or settings.DEFAULT_CHAT_MODEL,
-        title=body.title,
+        tenant_id=tenant_id,
+        user_id=user_id,
+        title=title or "New Conversation",
+        chat_model_id=chat_model_id,
     )
     db.add(convo)
-    db.commit()
+    db.flush()
     db.refresh(convo)
-    return ConversationOut(
-        conversation_id=convo.conversation_id,
-        chat_model_id=convo.chat_model_id,
-        title=convo.title,
-    )
+    return convo
 
 
 @router.post("/conversations/{conversation_id}/messages", response_model=ChatMessageOut)
@@ -49,12 +47,20 @@ async def send_message(
     db: Session = Depends(get_db),
     me=Depends(get_current_user),
 ):
+
+    if conversation_id == 0:
+        convo = create_conversation(
+            db=db,
+            tenant_id=me.tenant_id,
+            user_id=me.user_id,
+            chat_model_id=settings.DEFAULT_CHAT_MODEL,  # TODO
+        )
+        conversation_id = convo.conversation_id
+
     doc_ids = None
     if body.scope.mode == "selected":
         if not body.scope.doc_ids:
-            raise HTTPException(
-                400, "scope.doc_ids must be provided when mode='selected'"
-            )
+            raise HTTPException(400, "doc_ids must be provided when mode='selected'")
         doc_ids = body.scope.doc_ids
 
     k_vec = max(1, min(int(body.k_vec), 50))
@@ -81,7 +87,6 @@ async def send_message(
     except Exception as e:
         raise HTTPException(500, f"Chat failed: {e}")
 
-    print(citations_rows)
     citations = [
         Citation(
             chunk_id=c.chunk_id,
@@ -95,6 +100,7 @@ async def send_message(
     ]
 
     return ChatMessageOut(
+        conversation_id=conversation_id,
         message_id=asst_msg.message_id,
         answer=answer,
         citations=citations,

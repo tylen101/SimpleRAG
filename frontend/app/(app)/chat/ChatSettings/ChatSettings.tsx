@@ -1,32 +1,16 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import styles from './ChatSettings.module.css';
 import DocumentsTable from '../DocumentsTable/DocumentsTable';
+import { ScopeMode, Settings } from '../page';
 
-type ScopeMode = 'all' | 'selected';
+interface ChatSettingsProps {
+  setSettings: (settings: Settings) => void;
+  settings: Settings;
+}
 
-type Settings = {
-  scopeMode: ScopeMode;
-  doc_ids: number[];
-  content: string;
-  k_vec: number;
-  k_text: number;
-  use_text: boolean;
-};
-
-function ChatSettings() {
-  const [settings, setSettings] = useState<Settings>({
-    scopeMode: 'all',
-    doc_ids: [],
-    content: '',
-    k_vec: 6,
-    k_text: 6,
-    use_text: false,
-  });
-  // scope, selected doc ids, useText, vectors, text,
-  // default text = false
-
+function ChatSettings({ setSettings, settings }: ChatSettingsProps) {
   const toggleElement = (arr: number[], val: number) => {
     if (arr.includes(val)) {
       return arr.filter((el) => el !== val);
@@ -34,8 +18,6 @@ function ChatSettings() {
       return [...arr, val];
     }
   };
-
-  console.log(settings);
 
   return (
     <section className={styles.card}>
@@ -94,8 +76,6 @@ function ChatSettings() {
           />
         </div>
       )}
-
-      {/* <div className={styles.timing}>{timing}</div> */}
     </section>
   );
 }

@@ -1,20 +1,23 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import styles from './ChatInput.module.css';
 
 interface ChatInputProps {
+  handleInput: (value: string) => void;
   onSend: (message: string) => void;
   disabled?: boolean;
   placeholder?: string;
+  value: string;
 }
 
 export default function ChatInput({
   onSend,
   disabled = false,
   placeholder = 'Message…',
+  handleInput,
+  value,
 }: ChatInputProps) {
-  const [value, setValue] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Auto-grow textarea
@@ -30,7 +33,6 @@ export default function ChatInput({
     if (!trimmed || disabled) return;
 
     onSend(trimmed);
-    setValue('');
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -56,7 +58,7 @@ export default function ChatInput({
           className={styles.textarea}
           rows={1}
           value={value}
-          onChange={(e) => setValue(e.target.value)}
+          onChange={(e) => handleInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           disabled={disabled}

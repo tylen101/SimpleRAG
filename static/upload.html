@@ -187,7 +187,9 @@
       async function loadDocuments() {
         docsTableBody.innerHTML = '';
         try {
-          const res = await fetch(`${API_BASE}/documents`);
+          const res = await fetch(`${API_BASE}/documents`, {
+            credentials: 'include',
+          });
           if (!res.ok) throw new Error('Failed to fetch documents');
           const docs = await res.json();
 

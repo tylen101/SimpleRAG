@@ -1,5 +1,4 @@
 import { documentIcon } from '@/icons/documentIcon';
-import { lessonIcon } from '@/icons/lessonIcon';
 import { listIcon } from '@/icons/listIcon';
 import { profileIcon } from '@/icons/profileIcon';
 import { progressIcon } from '@/icons/progressIcon';

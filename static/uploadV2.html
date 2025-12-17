@@ -193,6 +193,7 @@
           const res = await fetch(`${API_BASE}/documents`, {
             method: 'POST',
             body: formData,
+            credentials: 'include',
           });
 
           if (!res.ok) {
@@ -231,6 +232,7 @@
         try {
           const res = await fetch(`${API_BASE}/documents/${docId}/process`, {
             method: 'POST',
+            credentials: 'include',
           });
 
           if (!res.ok) {
@@ -273,7 +275,9 @@
         tableStatus.textContent = '';
 
         try {
-          const res = await fetch(`${API_BASE}/documents`);
+          const res = await fetch(`${API_BASE}/documents`, {
+            credentials: 'include',
+          });
           if (!res.ok) throw new Error('Failed to fetch documents');
           const docs = await res.json();
 

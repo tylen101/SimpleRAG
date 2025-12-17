@@ -53,7 +53,7 @@ class ChatService:
         return "\n\n---\n\n".join(blocks)
 
     def _pick_score_for_event(self, h: Dict[str, Any]) -> Dict[str, Any]:
-        # store whatever exists; helps later debugging
+        # store whatever exists
         return {
             "hybrid_score": h.get("hybrid_score"),
             "vector_distance": h.get("vector_distance"),
@@ -90,7 +90,6 @@ class ChatService:
         if not q:
             raise ValueError("Message content cannot be empty")
 
-        # 0) Pull history BEFORE inserting the new user message (cleaner)
         history = (
             db.query(Message)
             .filter(Message.conversation_id == conversation_id)
@@ -103,7 +102,7 @@ class ChatService:
         # 1) Store user message
         user_msg = Message(conversation_id=conversation_id, role="user", content=q)
         db.add(user_msg)
-        db.flush()  # message_id available
+        db.flush()
 
         # 2) Embed + retrieve
         query_vec = await self._embed_query(q)
@@ -120,7 +119,7 @@ class ChatService:
             alpha=0.70,
         )
 
-        # 3) Persist retrieval event (audit)
+        # 3) Persist retrieval event
         ev = RetrievalEvent(
             message_id=user_msg.message_id,
             query_text=q,
@@ -149,11 +148,8 @@ class ChatService:
         db.add(ev)
 
         # bump conversation updated time
-        convo.updated_at = (
-            None  # optional if you rely on DB triggers; otherwise set datetime.utcnow()
-        )
+        convo.updated_at = None
 
-        # ✅ Commit now so user msg + retrieval event are not lost if model call fails
         db.commit()
         db.refresh(user_msg)
 
@@ -199,9 +195,6 @@ class ChatService:
         db.flush()  # assigns asst_msg.message_id
 
         # 7) Store citations for assistant message (using retrieval hits)
-        # IMPORTANT: you must still have `hits` available here
-        # Also ensure you imported MessageCitation at top:
-        # from models.Models import MessageCitation
 
         def citation_score_from_hit(h: dict) -> float:
             if h.get("hybrid_score") is not None:

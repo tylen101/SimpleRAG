@@ -93,7 +93,7 @@ function DocumentsTable({ selected = [], handleSelect }: DocumentsTableProps) {
         >
           {!selected.length ? '🔸' : '🔹'}
         </button>
-        <div className={styles.label}>
+        <div className={styles.label} onClick={() => setExpand(!expand)}>
           {selected.length} Document{selected.length !== 1 ? 's' : ''} selected{' '}
           {!expand && 'click to expand'}
         </div>

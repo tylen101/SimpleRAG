@@ -6,6 +6,7 @@
 
 .table.expanded {
   max-height: 400px;
+  max-width: calc(100vw - 80px);
 }
 
 .label {

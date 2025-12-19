@@ -18,6 +18,7 @@ export default function DashboardPage() {
   if (loading) return <p className={styles.loading}>Loading...</p>;
   if (!isAuthenticated) return null;
 
+
   return (
     <main className={styles.page}>
       <header className={styles.header}>

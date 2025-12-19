@@ -4,10 +4,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import styles from './ChatPage.module.css';
 import ChatSettings from './ChatSettings/ChatSettings';
 import ChatInput from './ChatInput/ChatInput';
+import { useChatSocket } from '@/hooks/useChatSocket';
 
 export type ScopeMode = 'all' | 'selected';
 
-type Citation = {
+export type Citation = {
   doc_id: number;
   chunk_id: number;
   page_start?: number | null;
@@ -75,6 +76,52 @@ function uid(prefix = 'm') {
 }
 
 export default function ChatPage() {
+  const [conversationId, setConversationId] = useState<number>(0);
+  const chatSocket = useChatSocket({
+    wsUrl: 'ws://localhost:8000/ws/chat',
+    onChatId: (newId) => {
+      // update local state
+      setConversationId(newId);
+
+      // optional: update route instantly
+      // router.replace(`/chat/${newId}`);
+    },
+    onAssistantDelta: (requestId, delta) => {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === requestId ? { ...m, content: (m.content || '') + delta } : m
+        )
+      );
+    },
+    onCitations: (requestId, citations) => {
+      setMessages((prev) =>
+        prev.map((m) => (m.id === requestId ? { ...m, citations } : m))
+      );
+    },
+    onDone: (requestId, meta) => {
+      if (meta?.timing_ms != null) setTimingMs(Math.round(meta.timing_ms));
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === requestId
+            ? {
+                ...m,
+                meta:
+                  meta?.message_id != null
+                    ? `message_id=${meta.message_id}`
+                    : 'Done.',
+              }
+            : m
+        )
+      );
+      setStatus({ text: 'Done.', kind: 'ok' });
+      setIsSending(false);
+    },
+    onError: (detail) => {
+      setStatus({ text: `Error: ${detail}`, kind: 'error' });
+      setIsSending(false);
+    },
+  });
+
   const [settings, setSettings] = useState<Settings>({
     scopeMode: 'all',
     doc_ids: [],
@@ -95,9 +142,11 @@ export default function ChatPage() {
   const [isSending, setIsSending] = useState(false);
   const [timingMs, setTimingMs] = useState<number | null>(null);
 
-  const conversationId = 0;
+  function newRequestId() {
+    return `${Date.now()}_${Math.random().toString(16).slice(2)}`;
+  }
 
-  async function sendMessage() {
+  async function sendMessageWS() {
     const content = (settings.content || '').trim();
     if (!content) {
       setStatus({ text: 'Please enter a message.', kind: 'error' });
@@ -112,102 +161,47 @@ export default function ChatPage() {
       return;
     }
 
-    const payload = {
-      content,
-      scope: { mode: settings.scopeMode, doc_ids: settings.doc_ids },
-      k_vec: Number(settings.k_vec),
-      k_text: Number(settings.k_text),
-      use_text: settings.use_text,
-    };
+    const requestId = newRequestId();
 
     // optimistic user bubble
-    const userMsg: ChatMessage = {
-      id: uid('user'),
-      role: 'user',
-      content,
-    };
-    setMessages((prev) => [...prev, userMsg]);
+    setMessages((prev) => [
+      ...prev,
+      { id: uid('user'), role: 'user', content },
+      // create an assistant bubble immediately; we’ll stream into it
+      {
+        id: requestId,
+        role: 'assistant',
+        content: '',
+        meta: 'streaming…',
+        citations: [],
+      },
+    ]);
 
     setStatus({ text: 'Sending...', kind: '' });
     setIsSending(true);
     setTimingMs(null);
 
-    const t0 = performance.now();
     try {
-      const res = await fetch(
-        `http://localhost:8000/conversations/${conversationId}/messages`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify(payload),
-        }
-      );
-
-      const text = await res.text();
-      let data: SendMessageResponse | { raw: string };
-      try {
-        data = JSON.parse(text);
-      } catch {
-        data = { raw: text };
-      }
-
-      if (!res.ok) {
-        const detail =
-          (data as SendMessageResponse)?.detail ||
-          (data as any)?.raw ||
-          text ||
-          `HTTP ${res.status}`;
-
-        setStatus({ text: `Error ${res.status}: ${detail}`, kind: 'error' });
-
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: uid('err'),
-            role: 'assistant',
-            content: `ERROR: ${detail}`,
-            meta: `HTTP ${res.status}`,
-          },
-        ]);
-        return;
-      }
-
-      const t1 = performance.now();
-      setTimingMs(Math.round(t1 - t0));
-
-      const ok = data as SendMessageResponse;
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: uid('asst'),
-          role: 'assistant',
-          content: ok.answer || '',
-          citations: ok.citations || [],
-          meta:
-            ok.message_id != null ? `message_id=${ok.message_id}` : undefined,
-        },
-      ]);
-
-      setStatus({ text: 'Done.', kind: 'ok' });
-
-      // clear input content only (keep other settings)
-      setSettings((s) => ({ ...s, content: '' }));
+      chatSocket.send({
+        type: 'user_message',
+        request_id: requestId,
+        conversation_id: conversationId, // can be 0
+        content,
+        scope: { mode: settings.scopeMode, doc_ids: settings.doc_ids },
+        k_vec: Number(settings.k_vec),
+        k_text: Number(settings.k_text),
+        use_text: settings.use_text,
+      });
     } catch (e) {
       setStatus({ text: `Send failed: ${String(e)}`, kind: 'error' });
-      setMessages((prev) => [
-        ...prev,
-        { id: uid('catch'), role: 'assistant', content: `ERROR: ${String(e)}` },
-      ]);
-    } finally {
       setIsSending(false);
+      return;
     }
   }
 
   const handleSendMessage = () => {
-    // keeps your existing hook
-    void sendMessage();
+    sendMessage();
+    setSettings((s) => ({ ...s, content: '' }));
   };
 
   return (
